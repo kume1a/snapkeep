@@ -40,12 +40,14 @@ func ZipDirectory(dirPath, zipFileName string) error {
 			}
 
 			if info.IsDir() {
-				// Add directory entry (with trailing slash)
-				if _, err := zipWriter.Create(relPath + "/"); err != nil {
+				header := &zip.FileHeader{
+					Name:   relPath + "/",
+					Method: zip.Store,
+				}
+				if _, err := zipWriter.CreateHeader(header); err != nil {
 					logger.Error("Failed to create zip entry for directory:", relPath, "Error:", err)
 					return err
 				}
-
 				return nil
 			}
 
@@ -54,10 +56,18 @@ func ZipDirectory(dirPath, zipFileName string) error {
 				logger.Error("Failed to open file for zipping:", path, "Error:", err)
 				return err
 			}
-
 			defer fileToZip.Close()
 
-			zipEntryWriter, err := zipWriter.Create(relPath)
+			header, err := zip.FileInfoHeader(info)
+			if err != nil {
+				logger.Error("Failed to get file info header for:", relPath, "Error:", err)
+				return err
+			}
+			header.Name = relPath
+			header.Method = zip.Deflate
+			header.UncompressedSize64 = uint64(info.Size())
+
+			zipEntryWriter, err := zipWriter.CreateHeader(header)
 			if err != nil {
 				logger.Error("Failed to create zip entry for:", relPath, "Error:", err)
 				return err

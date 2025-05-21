@@ -19,8 +19,11 @@ func Run(cfg *config.ApiConfig) error {
 		return err
 	}
 
-	dumpDir := "tmp"
-	zipFileName := dumpDir + "/backup_" + fmt.Sprint(time.Now().UnixMilli()) + ".zip"
+	tmpDir := "tmp"
+	timestamp := fmt.Sprint(time.Now().UnixMilli())
+	zipFileName := tmpDir + "/backup_" + timestamp + ".zip"
+	backupFolderPath := envVariables.BackupFolderPath
+	backupFolderZipName := tmpDir + "/" + filepath.Base(backupFolderPath) + "_" + timestamp + ".zip"
 
 	db, err := openBackupDB()
 	if err != nil {
@@ -35,14 +38,11 @@ func Run(cfg *config.ApiConfig) error {
 
 	logger.Debug("All tables exported successfully.")
 
-	err = ZipDirectory(dumpDir, zipFileName)
+	err = ZipDirectory(tmpDir, zipFileName)
 	if err != nil {
 		logger.Error("Failed to create zip file:", zipFileName, "Error:", err)
 		return err
 	}
-
-	backupFolderPath := envVariables.BackupFolderPath
-	backupFolderZipName := filepath.Base(backupFolderPath)
 
 	if err := ZipDirectory(backupFolderPath, backupFolderZipName); err != nil {
 		logger.Error("Failed to create zip file:", zipFileName, "Error:", err)
