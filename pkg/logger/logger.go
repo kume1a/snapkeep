@@ -2,22 +2,22 @@ package logger
 
 import "log"
 
-func Debug(msg string) {
-	log.Println("DEBUG:", msg)
+func Debug(v ...any) {
+	log.Println("DEBUG:", v)
 }
 
-func Info(msg string) {
-	log.Println("INFO:", msg)
+func Info(v ...any) {
+	log.Println("INFO:", v)
 }
 
-func Warn(msg string) {
-	log.Println("WARN:", msg)
+func Warn(v ...any) {
+	log.Println("WARN:", v)
 }
 
-func Error(err error) {
-	log.Println("ERROR:", err)
+func Error(v ...any) {
+	log.Println("ERROR:", v)
 }
 
-func Fatal(err error) {
-	log.Fatalln("FATAL:", err)
+func Fatal(v ...any) {
+	log.Fatalln("FATAL:", v)
 }
