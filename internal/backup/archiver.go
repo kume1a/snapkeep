@@ -14,40 +14,61 @@ func ZipDirectory(dirPath, zipFileName string) error {
 		logger.Error("Failed to create zip file:", zipFileName, "Error:", err)
 		return err
 	}
+
 	defer zipFile.Close()
 
 	zipWriter := zip.NewWriter(zipFile)
+
 	defer zipWriter.Close()
 
-	dirEntries, err := os.ReadDir(dirPath)
-	if err != nil {
-		logger.Error("Failed to read directory:", dirPath, "Error:", err)
-		return err
-	}
+	return filepath.Walk(
+		dirPath,
+		func(path string, info os.FileInfo, err error) error {
+			if err != nil {
+				logger.Error("Failed to access path:", path, "Error:", err)
+				return err
+			}
 
-	for _, entry := range dirEntries {
-		if entry.IsDir() {
-			continue
-		}
-		filePath := filepath.Join(dirPath, entry.Name())
-		fileToZip, err := os.Open(filePath)
-		if err != nil {
-			logger.Error("Failed to open file for zipping:", filePath, "Error:", err)
-			return err
-		}
-		defer fileToZip.Close()
+			relPath, err := filepath.Rel(dirPath, path)
+			if err != nil {
+				logger.Error("Failed to get relative path for:", path, "Error:", err)
+				return err
+			}
 
-		zipEntryWriter, err := zipWriter.Create(entry.Name())
-		if err != nil {
-			logger.Error("Failed to create zip entry for:", entry.Name(), "Error:", err)
-			return err
-		}
+			if relPath == "." {
+				return nil // skip root
+			}
 
-		_, err = io.Copy(zipEntryWriter, fileToZip)
-		if err != nil {
-			logger.Error("Failed to write file to zip:", entry.Name(), "Error:", err)
-			return err
-		}
-	}
-	return nil
+			if info.IsDir() {
+				// Add directory entry (with trailing slash)
+				if _, err := zipWriter.Create(relPath + "/"); err != nil {
+					logger.Error("Failed to create zip entry for directory:", relPath, "Error:", err)
+					return err
+				}
+
+				return nil
+			}
+
+			fileToZip, err := os.Open(path)
+			if err != nil {
+				logger.Error("Failed to open file for zipping:", path, "Error:", err)
+				return err
+			}
+
+			defer fileToZip.Close()
+
+			zipEntryWriter, err := zipWriter.Create(relPath)
+			if err != nil {
+				logger.Error("Failed to create zip entry for:", relPath, "Error:", err)
+				return err
+			}
+
+			if _, err := io.Copy(zipEntryWriter, fileToZip); err != nil {
+				logger.Error("Failed to write file to zip:", relPath, "Error:", err)
+				return err
+			}
+
+			return nil
+		},
+	)
 }

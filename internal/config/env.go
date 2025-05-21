@@ -35,6 +35,7 @@ type EnvVariables struct {
 	Port                     string
 	DbConnectionString       string
 	BackupDbConnectionString string
+	BackupFolderPath         string
 }
 
 func ParseEnv() (*EnvVariables, error) {
@@ -58,12 +59,18 @@ func ParseEnv() (*EnvVariables, error) {
 		return nil, err
 	}
 
+	backupFolderPath, err := getEnv("BACKUP_FOLDER_PATH")
+	if err != nil {
+		return nil, err
+	}
+
 	return &EnvVariables{
 		IsDevelopment:            environment == "development",
 		IsProduction:             environment == "production",
 		Port:                     port,
 		DbConnectionString:       dbConnectionString,
 		BackupDbConnectionString: backupDbConnectionString,
+		BackupFolderPath:         backupFolderPath,
 	}, nil
 }
 
