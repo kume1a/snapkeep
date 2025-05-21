@@ -1,7 +1,6 @@
-package db
+package config
 
 import (
-	"snapkeep/internal/config"
 	"snapkeep/pkg/logger"
 
 	"gorm.io/driver/postgres"
@@ -9,7 +8,7 @@ import (
 )
 
 func InitializeDB() (*gorm.DB, error) {
-	envVars, err := config.ParseEnv()
+	envVars, err := ParseEnv()
 	if err != nil {
 		logger.Fatal("Coultn't parse env vars, returning nil, err:", err)
 		return nil, err
@@ -20,6 +19,8 @@ func InitializeDB() (*gorm.DB, error) {
 		logger.Fatal("failed to connect database, err:", err)
 		return nil, err
 	}
+
+	db.AutoMigrate(&Backup{})
 
 	return db, nil
 }

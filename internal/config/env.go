@@ -3,8 +3,8 @@ package config
 import (
 	"errors"
 	"fmt"
-	"log"
 	"os"
+	"snapkeep/pkg/logger"
 
 	"github.com/joho/godotenv"
 )
@@ -23,7 +23,7 @@ func LoadEnv() {
 	if env == "development" {
 		envPath := ".env." + env
 
-		log.Println("Loading env file: " + envPath)
+		logger.Debug("Loading env file: " + envPath)
 
 		godotenv.Load(envPath)
 	}
@@ -79,7 +79,7 @@ func getEnv(key string) (string, error) {
 	if envVar == "" {
 		msg := fmt.Sprintf("%v is not found in the env", key)
 
-		log.Fatal(msg)
+		logger.Fatal(msg)
 		return "", errors.New(msg)
 	}
 
