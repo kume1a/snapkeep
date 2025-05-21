@@ -30,10 +30,11 @@ func LoadEnv() {
 }
 
 type EnvVariables struct {
-	IsDevelopment      bool
-	IsProduction       bool
-	Port               string
-	DbConnectionString string
+	IsDevelopment            bool
+	IsProduction             bool
+	Port                     string
+	DbConnectionString       string
+	BackupDbConnectionString string
 }
 
 func ParseEnv() (*EnvVariables, error) {
@@ -52,11 +53,17 @@ func ParseEnv() (*EnvVariables, error) {
 		return nil, err
 	}
 
+	backupDbConnectionString, err := getEnv("BACKUP_DB_CONNECTION_STRING")
+	if err != nil {
+		return nil, err
+	}
+
 	return &EnvVariables{
-		IsDevelopment:      environment == "development",
-		IsProduction:       environment == "production",
-		Port:               port,
-		DbConnectionString: dbConnectionString,
+		IsDevelopment:            environment == "development",
+		IsProduction:             environment == "production",
+		Port:                     port,
+		DbConnectionString:       dbConnectionString,
+		BackupDbConnectionString: backupDbConnectionString,
 	}, nil
 }
 

@@ -5,45 +5,49 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"snapkeep/pkg/logger"
 )
 
-func ZipFolder(source, target string) error {
-	zipfile, err := os.Create(target)
+func ZipDirectory(dirPath, zipFileName string) error {
+	zipFile, err := os.Create(zipFileName)
 	if err != nil {
+		logger.Error("Failed to create zip file:", zipFileName, "Error:", err)
 		return err
 	}
-	defer zipfile.Close()
+	defer zipFile.Close()
 
-	zipWriter := zip.NewWriter(zipfile)
+	zipWriter := zip.NewWriter(zipFile)
 	defer zipWriter.Close()
 
-	return filepath.Walk(source, func(path string, info os.FileInfo, err error) error {
+	dirEntries, err := os.ReadDir(dirPath)
+	if err != nil {
+		logger.Error("Failed to read directory:", dirPath, "Error:", err)
+		return err
+	}
+
+	for _, entry := range dirEntries {
+		if entry.IsDir() {
+			continue
+		}
+		filePath := filepath.Join(dirPath, entry.Name())
+		fileToZip, err := os.Open(filePath)
 		if err != nil {
+			logger.Error("Failed to open file for zipping:", filePath, "Error:", err)
 			return err
 		}
-		header, err := zip.FileInfoHeader(info)
+		defer fileToZip.Close()
+
+		zipEntryWriter, err := zipWriter.Create(entry.Name())
 		if err != nil {
+			logger.Error("Failed to create zip entry for:", entry.Name(), "Error:", err)
 			return err
 		}
-		header.Name, _ = filepath.Rel(source, path)
-		if info.IsDir() {
-			header.Name += "/"
-		} else {
-			header.Method = zip.Deflate
-		}
-		writer, err := zipWriter.CreateHeader(header)
+
+		_, err = io.Copy(zipEntryWriter, fileToZip)
 		if err != nil {
+			logger.Error("Failed to write file to zip:", entry.Name(), "Error:", err)
 			return err
 		}
-		if !info.IsDir() {
-			file, err := os.Open(path)
-			if err != nil {
-				return err
-			}
-			defer file.Close()
-			_, err = io.Copy(writer, file)
-			return err
-		}
-		return nil
-	})
+	}
+	return nil
 }
