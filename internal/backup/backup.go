@@ -38,7 +38,7 @@ func Run(
 		return err
 	}
 
-	if err := DumpDatabaseTablesToJson(db); err != nil {
+	if _, err := DumpDatabaseTablesToJson(db); err != nil {
 		logger.Error("Failed to dump database tables to JSON:", err)
 		return err
 	}
@@ -104,6 +104,11 @@ func Run(
 	logger.Debug("Uploaded zipped backup folder URL:", uploadedBackupFolderZipURL)
 
 	logger.Info("Backup completed successfully.")
+
+	if err := os.RemoveAll(tmpDir); err != nil {
+		logger.Error("Failed to remove temporary directory:", tmpDir, "Error:", err)
+		return err
+	}
 
 	return nil
 }

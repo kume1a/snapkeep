@@ -7,6 +7,7 @@ import (
 	"snapkeep/pkg/logger"
 
 	"github.com/aws/aws-sdk-go-v2/service/s3"
+	"github.com/aws/aws-sdk-go-v2/service/s3/types"
 )
 
 type UploadFileToS3Input struct {
@@ -24,7 +25,7 @@ func UploadFileToS3(input UploadFileToS3Input) (string, error) {
 		Key:         &input.Key,
 		Body:        input.Body,
 		ContentType: &input.ContentType,
-		// ACL:         types.ObjectCannedACLPublicRead,
+		ACL:         types.ObjectCannedACLPublicRead,
 	}
 
 	_, err := input.S3Client.PutObject(input.Context, s3Input)

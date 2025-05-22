@@ -8,29 +8,40 @@ import (
 	"gorm.io/gorm"
 )
 
-func DumpDatabaseTablesToJson(db *gorm.DB) error {
-	var tableNames []string
-	err := db.Raw("SELECT table_name FROM information_schema.tables WHERE table_schema = 'public'").Scan(&tableNames).Error
+func DumpDatabaseTablesToJson(db *gorm.DB) ([]string, error) {
+	err := os.MkdirAll("tmp", 0755)
 	if err != nil {
-		logger.Error("Failed to retrieve table names:", err)
-		return err
+		logger.Error("Failed to create tmp directory:", err)
+		return nil, err
 	}
 
+	var tableNames []string
+	err = db.
+		Raw("SELECT table_name FROM information_schema.tables WHERE table_schema = 'public'").
+		Scan(&tableNames).
+		Error
+
+	if err != nil {
+		logger.Error("Failed to retrieve table names:", err)
+		return nil, err
+	}
+
+	var filePaths []string
 	for _, tableName := range tableNames {
 		filePath := "tmp/" + tableName + ".json"
 		err := dumpDatabaseTableToJSON(db, tableName, filePath)
 		if err != nil {
 			logger.Error("Failed to dump table:", tableName, "Error:", err)
-			return err
+			return nil, err
 		}
+		filePaths = append(filePaths, filePath)
 	}
 
-	return nil
+	return filePaths, nil
 }
 
 // TODO indent json objects properly
 func dumpDatabaseTableToJSON(db *gorm.DB, tableName, filePath string) error {
-	os.MkdirAll("tmp", 0755)
 	file, err := os.Create(filePath)
 	if err != nil {
 		logger.Error("Failed to create file:", filePath, "Error:", err)
@@ -42,16 +53,21 @@ func dumpDatabaseTableToJSON(db *gorm.DB, tableName, filePath string) error {
 	batchSize := 1000
 	offset := 0
 	rowCount := 0
+
 	for {
 		var rows []map[string]any
+
 		result := db.Table(tableName).Limit(batchSize).Offset(offset).Find(&rows)
+
 		if result.Error != nil {
 			logger.Error("Failed to query table:", tableName, "Error:", result.Error)
 			return result.Error
 		}
+
 		if len(rows) == 0 {
 			break
 		}
+
 		for _, row := range rows {
 			if rowCount == 0 {
 				file.WriteString("\n")
@@ -67,6 +83,7 @@ func dumpDatabaseTableToJSON(db *gorm.DB, tableName, filePath string) error {
 			file.Write(jsonBytes)
 			rowCount++
 		}
+
 		offset += batchSize
 	}
 	if rowCount > 0 {
