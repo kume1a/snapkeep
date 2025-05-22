@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"snapkeep/pkg/logger"
+	"strconv"
 
 	"github.com/joho/godotenv"
 )
@@ -36,6 +37,8 @@ type EnvVariables struct {
 	DbConnectionString       string
 	BackupDbConnectionString string
 	BackupFolderPath         string
+	AWSS3LimitBytes          int64
+	AWSS3BackupBucketName    string
 }
 
 func ParseEnv() (*EnvVariables, error) {
@@ -64,6 +67,16 @@ func ParseEnv() (*EnvVariables, error) {
 		return nil, err
 	}
 
+	awsS3LimitBytes, err := getEnvInt("AWS_S3_LIMIT_BYTES")
+	if err != nil {
+		return nil, err
+	}
+
+	awsS3BackupBucketName, err := getEnv("AWS_S3_BACKUP_BUCKET_NAME")
+	if err != nil {
+		return nil, err
+	}
+
 	return &EnvVariables{
 		IsDevelopment:            environment == "development",
 		IsProduction:             environment == "production",
@@ -71,22 +84,24 @@ func ParseEnv() (*EnvVariables, error) {
 		DbConnectionString:       dbConnectionString,
 		BackupDbConnectionString: backupDbConnectionString,
 		BackupFolderPath:         backupFolderPath,
+		AWSS3LimitBytes:          awsS3LimitBytes,
+		AWSS3BackupBucketName:    awsS3BackupBucketName,
 	}, nil
 }
 
-// func getEnvInt(key string) (int64, error) {
-// 	val, err := getEnv(key)
-// 	if err != nil {
-// 		return 0, err
-// 	}
+func getEnvInt(key string) (int64, error) {
+	val, err := getEnv(key)
+	if err != nil {
+		return 0, err
+	}
 
-// 	valInt, err := strconv.ParseInt(val, 10, 64)
-// 	if err != nil {
-// 		return 0, err
-// 	}
+	valInt, err := strconv.ParseInt(val, 10, 64)
+	if err != nil {
+		return 0, err
+	}
 
-// 	return valInt, nil
-// }
+	return valInt, nil
+}
 
 func getEnv(key string) (string, error) {
 	envVar := os.Getenv(key)

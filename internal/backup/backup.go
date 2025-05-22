@@ -1,8 +1,12 @@
 package backup
 
 import (
+	"context"
 	"fmt"
+	"os"
+	"path"
 	"snapkeep/internal/config"
+	"snapkeep/internal/uploader"
 	"snapkeep/pkg/logger"
 	"time"
 
@@ -12,7 +16,10 @@ import (
 	"gorm.io/gorm"
 )
 
-func Run(cfg *config.ApiConfig) error {
+func Run(
+	ctx context.Context,
+	cfg *config.ApiConfig,
+) error {
 	envVariables, err := config.ParseEnv()
 	if err != nil {
 		logger.Error("Failed to parse environment variables:", err)
@@ -21,9 +28,9 @@ func Run(cfg *config.ApiConfig) error {
 
 	tmpDir := "tmp"
 	timestamp := fmt.Sprint(time.Now().UnixMilli())
-	zipFileName := tmpDir + "/backup_" + timestamp + ".zip"
+	zipedBackupDatabaseDestination := tmpDir + "/backup_" + timestamp + ".zip"
 	backupFolderPath := envVariables.BackupFolderPath
-	backupFolderZipName := tmpDir + "/" + filepath.Base(backupFolderPath) + "_" + timestamp + ".zip"
+	zippedBackupFolderDestination := tmpDir + "/" + filepath.Base(backupFolderPath) + "_" + timestamp + ".zip"
 
 	db, err := openBackupDB()
 	if err != nil {
@@ -38,16 +45,65 @@ func Run(cfg *config.ApiConfig) error {
 
 	logger.Debug("All tables exported successfully.")
 
-	err = ZipDirectory(tmpDir, zipFileName)
+	zippedBackupDatabasePath, err := ZipDirectory(tmpDir, zipedBackupDatabaseDestination)
 	if err != nil {
-		logger.Error("Failed to create zip file:", zipFileName, "Error:", err)
+		logger.Error("Failed to create zip file:", zipedBackupDatabaseDestination, "Error:", err)
 		return err
 	}
 
-	if err := ZipDirectory(backupFolderPath, backupFolderZipName); err != nil {
-		logger.Error("Failed to create zip file:", zipFileName, "Error:", err)
+	zippedBackupFolderPath, err := ZipDirectory(backupFolderPath, zippedBackupFolderDestination)
+	if err != nil {
+		logger.Error("Failed to create zip file:", zipedBackupDatabaseDestination, "Error:", err)
 		return err
 	}
+
+	logger.Debug("Zipped backup database path:", zippedBackupDatabasePath)
+	logger.Debug("Zipped backup folder path:", zippedBackupFolderPath)
+
+	zippedBackupDatabaseFile, err := os.Open(zippedBackupDatabasePath)
+	if err != nil {
+		logger.Error("Failed to open zipped backup database file for upload:", err)
+		return err
+	}
+	defer zippedBackupDatabaseFile.Close()
+
+	uploadedBackupDatabaseZipURL, err := uploader.UploadFileToS3(uploader.UploadFileToS3Input{
+		Context:     ctx,
+		S3Client:    cfg.S3Client,
+		Bucket:      envVariables.AWSS3BackupBucketName,
+		Key:         path.Base(zippedBackupDatabasePath),
+		Body:        zippedBackupDatabaseFile,
+		ContentType: "application/zip",
+	})
+	if err != nil {
+		logger.Error("Failed to upload zipped backup database to S3:", err)
+		return err
+	}
+
+	zippedBackupFolderFile, err := os.Open(zippedBackupFolderPath)
+	if err != nil {
+		logger.Error("Failed to open zipped backup folder file for upload:", err)
+		return err
+	}
+	defer zippedBackupFolderFile.Close()
+
+	uploadedBackupFolderZipURL, err := uploader.UploadFileToS3(uploader.UploadFileToS3Input{
+		Context:     ctx,
+		S3Client:    cfg.S3Client,
+		Bucket:      envVariables.AWSS3BackupBucketName,
+		Key:         path.Base(zippedBackupFolderPath),
+		Body:        zippedBackupFolderFile,
+		ContentType: "application/zip",
+	})
+	if err != nil {
+		logger.Error("Failed to upload zipped backup folder to S3:", err)
+		return err
+	}
+
+	logger.Debug("Uploaded zipped backup database URL:", uploadedBackupDatabaseZipURL)
+	logger.Debug("Uploaded zipped backup folder URL:", uploadedBackupFolderZipURL)
+
+	logger.Info("Backup completed successfully.")
 
 	return nil
 }

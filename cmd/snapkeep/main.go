@@ -1,12 +1,15 @@
 package main
 
 import (
+	"context"
 	"snapkeep/internal/backup"
 	"snapkeep/internal/config"
 	"snapkeep/pkg/logger"
 )
 
 func main() {
+	ctx := context.Background()
+
 	config.LoadEnv()
 
 	db, err := config.InitializeDB()
@@ -15,16 +18,21 @@ func main() {
 		return
 	}
 
-	cfg := &config.ApiConfig{
-		ResourceConfig: &config.ResourceConfig{
-			DB: db,
-		},
-	}
-
-	if err := backup.Run(cfg); err != nil {
-		logger.Fatal("Failed to run backup: ", err)
+	s3Client, err := config.InitializeS3Client(ctx)
+	if err != nil {
+		logger.Fatal("Failed to initialize S3 client: ", err)
 		return
 	}
 
-	logger.Info("Backup completed successfully")
+	cfg := &config.ApiConfig{
+		ResourceConfig: &config.ResourceConfig{
+			DB:       db,
+			S3Client: s3Client,
+		},
+	}
+
+	if err := backup.Run(ctx, cfg); err != nil {
+		logger.Fatal("Failed to run backup: ", err)
+		return
+	}
 }
