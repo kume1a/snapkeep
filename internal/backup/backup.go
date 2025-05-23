@@ -18,7 +18,9 @@ import (
 
 func Run(
 	ctx context.Context,
-	cfg *config.ApiConfig,
+	cfg *config.ResourceConfig,
+	backupDBConnectionString string,
+	backupFolderPath string,
 ) error {
 	envVariables, err := config.ParseEnv()
 	if err != nil {
@@ -29,10 +31,9 @@ func Run(
 	tmpDir := "tmp"
 	timestamp := fmt.Sprint(time.Now().UnixMilli())
 	zipedBackupDatabaseDestination := tmpDir + "/backup_" + timestamp + ".zip"
-	backupFolderPath := envVariables.BackupFolderPath
 	zippedBackupFolderDestination := tmpDir + "/" + filepath.Base(backupFolderPath) + "_" + timestamp + ".zip"
 
-	db, err := openBackupDB()
+	db, err := gorm.Open(postgres.Open(backupDBConnectionString), &gorm.Config{})
 	if err != nil {
 		logger.Error("Failed to open backup database:", err)
 		return err
@@ -111,14 +112,4 @@ func Run(
 	}
 
 	return nil
-}
-
-func openBackupDB() (*gorm.DB, error) {
-	envVariables, err := config.ParseEnv()
-	if err != nil {
-		logger.Error("Failed to parse environment variables:", err)
-		return nil, err
-	}
-
-	return gorm.Open(postgres.Open(envVariables.BackupDbConnectionString), &gorm.Config{})
 }

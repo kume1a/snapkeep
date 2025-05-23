@@ -16,11 +16,6 @@ func LoadEnv() {
 		env = "development"
 	}
 
-	// godotenv.Load(".env." + env + ".local")
-	// if "test" != env {
-	//   godotenv.Load(".env.local")
-	// }
-
 	if env == "development" {
 		envPath := ".env." + env
 
@@ -39,6 +34,8 @@ type EnvVariables struct {
 	BackupFolderPath         string
 	AWSS3LimitBytes          int64
 	AWSS3BackupBucketName    string
+	RedisAddress             string
+	RedisPassword            string
 }
 
 func ParseEnv() (*EnvVariables, error) {
@@ -77,6 +74,16 @@ func ParseEnv() (*EnvVariables, error) {
 		return nil, err
 	}
 
+	redisAddress, err := getEnv("REDIS_ADDRESS")
+	if err != nil {
+		return nil, err
+	}
+
+	redisPassword, err := getEnv("REDIS_PASSWORD")
+	if err != nil {
+		return nil, err
+	}
+
 	return &EnvVariables{
 		IsDevelopment:            environment == "development",
 		IsProduction:             environment == "production",
@@ -86,6 +93,8 @@ func ParseEnv() (*EnvVariables, error) {
 		BackupFolderPath:         backupFolderPath,
 		AWSS3LimitBytes:          awsS3LimitBytes,
 		AWSS3BackupBucketName:    awsS3BackupBucketName,
+		RedisAddress:             redisAddress,
+		RedisPassword:            redisPassword,
 	}, nil
 }
 

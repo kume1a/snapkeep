@@ -5,6 +5,7 @@ WORKDIR /app
 COPY go.mod go.sum Makefile ./
 RUN go mod download
 
+COPY *.go ./
 COPY ./internal ./internal
 
 RUN CGO_ENABLED=0 GOOS=linux go build -o /sonifybin
