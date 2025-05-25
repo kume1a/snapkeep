@@ -56,6 +56,7 @@ func main() {
 
 	task, err := tasks.NewBackupDataTask(
 		tasks.BackupDataPayload{
+			BackupName:               envVars.BackupName,
 			BackupDBConnectionString: envVars.BackupDbConnectionString,
 			BackupFolderPath:         envVars.BackupFolderPath,
 		},
@@ -71,7 +72,7 @@ func main() {
 		return
 	}
 
-	logger.Info("Enqueued task: id=%s, type=%s, queue=%s", info.ID, info.Type, info.Queue)
+	logger.Info("Enqueued task: id=" + info.ID + ", type=" + info.Type + ", queue=" + info.Queue)
 
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, os.Interrupt, syscall.SIGTERM)

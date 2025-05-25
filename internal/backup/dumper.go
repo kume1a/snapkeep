@@ -8,10 +8,10 @@ import (
 	"gorm.io/gorm"
 )
 
-func DumpDatabaseTablesToJson(db *gorm.DB) ([]string, error) {
-	err := os.MkdirAll("tmp", 0755)
+func DumpDatabaseTablesToJson(db *gorm.DB, destPath string) ([]string, error) {
+	err := os.MkdirAll(destPath, 0755)
 	if err != nil {
-		logger.Error("Failed to create tmp directory:", err)
+		logger.Error("Failed to create"+destPath+" directory:", err)
 		return nil, err
 	}
 
@@ -28,7 +28,7 @@ func DumpDatabaseTablesToJson(db *gorm.DB) ([]string, error) {
 
 	var filePaths []string
 	for _, tableName := range tableNames {
-		filePath := "tmp/" + tableName + ".json"
+		filePath := destPath + "/" + tableName + ".json"
 		err := dumpDatabaseTableToJSON(db, tableName, filePath)
 		if err != nil {
 			logger.Error("Failed to dump table:", tableName, "Error:", err)

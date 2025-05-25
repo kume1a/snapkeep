@@ -45,15 +45,11 @@ func InitializeTaskServer(cfg *config.ResourceConfig) (*asynq.Server, error) {
 	mux := asynq.NewServeMux()
 	mux.HandleFunc(TypeBackupData, CreateBackupDataTaskHandler(cfg))
 
-	logger.Debug("Task server initialized successfully")
-
 	go func() {
 		if err := srv.Run(mux); err != nil {
 			log.Fatalf("could not run server: %v", err)
 		}
 	}()
-
-	logger.Debug("Task server started successfully")
 
 	return srv, nil
 }

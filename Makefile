@@ -15,9 +15,6 @@ build:
 clean:
 	rm -rf $(TMP_DIR) $(BUILD_DIR)
 
-dump:
-	./scripts/dump.sh "postgres://user:pass@localhost/db" "$(TMP_DIR)/manual_dump.sql"
-
 qdash:
 	asynq dash --uri "localhost:6380" --password ""
 
@@ -26,5 +23,4 @@ help:
 	@echo "  make run        Run the backup service"
 	@echo "  make build      Build the binary"
 	@echo "  make clean      Clean up tmp files and binaries"
-	@echo "  make dump       Dump database using script"
 	@echo "  make qdash      Run asynq dashboard (requires asynq installed)"

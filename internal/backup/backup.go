@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"path"
 	"snapkeep/internal/config"
 	"snapkeep/internal/uploader"
 	"snapkeep/pkg/logger"
@@ -21,6 +20,7 @@ func Run(
 	cfg *config.ResourceConfig,
 	backupDBConnectionString string,
 	backupFolderPath string,
+	backupName string,
 ) error {
 	envVariables, err := config.ParseEnv()
 	if err != nil {
@@ -28,10 +28,11 @@ func Run(
 		return err
 	}
 
-	tmpDir := "tmp"
+	directoryPath := "./tmp/" + backupName
+
 	timestamp := fmt.Sprint(time.Now().UnixMilli())
-	zipedBackupDatabaseDestination := tmpDir + "/backup_" + timestamp + ".zip"
-	zippedBackupFolderDestination := tmpDir + "/" + filepath.Base(backupFolderPath) + "_" + timestamp + ".zip"
+	zipedBackupDatabaseDestination := directoryPath + "/backup_" + timestamp + ".zip"
+	zippedBackupFolderDestination := directoryPath + "/" + filepath.Base(backupFolderPath) + "_" + timestamp + ".zip"
 
 	db, err := gorm.Open(postgres.Open(backupDBConnectionString), &gorm.Config{})
 	if err != nil {
@@ -39,14 +40,14 @@ func Run(
 		return err
 	}
 
-	if _, err := DumpDatabaseTablesToJson(db); err != nil {
+	if _, err := DumpDatabaseTablesToJson(db, directoryPath); err != nil {
 		logger.Error("Failed to dump database tables to JSON:", err)
 		return err
 	}
 
 	logger.Debug("All tables exported successfully.")
 
-	zippedBackupDatabasePath, err := ZipDirectory(tmpDir, zipedBackupDatabaseDestination)
+	zippedBackupDatabasePath, err := ZipDirectory(directoryPath, zipedBackupDatabaseDestination)
 	if err != nil {
 		logger.Error("Failed to create zip file:", zipedBackupDatabaseDestination, "Error:", err)
 		return err
@@ -72,7 +73,8 @@ func Run(
 		Context:     ctx,
 		S3Client:    cfg.S3Client,
 		Bucket:      envVariables.AWSS3BackupBucketName,
-		Key:         path.Base(zippedBackupDatabasePath),
+		Prefix:      backupName,
+		Key:         filepath.Base(zippedBackupDatabasePath),
 		Body:        zippedBackupDatabaseFile,
 		ContentType: "application/zip",
 	})
@@ -92,7 +94,8 @@ func Run(
 		Context:     ctx,
 		S3Client:    cfg.S3Client,
 		Bucket:      envVariables.AWSS3BackupBucketName,
-		Key:         path.Base(zippedBackupFolderPath),
+		Prefix:      backupName,
+		Key:         filepath.Base(zippedBackupFolderPath),
 		Body:        zippedBackupFolderFile,
 		ContentType: "application/zip",
 	})
@@ -106,8 +109,8 @@ func Run(
 
 	logger.Info("Backup completed successfully.")
 
-	if err := os.RemoveAll(tmpDir); err != nil {
-		logger.Error("Failed to remove temporary directory:", tmpDir, "Error:", err)
+	if err := os.RemoveAll(directoryPath); err != nil {
+		logger.Error("Failed to remove temporary directory:", directoryPath, "Error:", err)
 		return err
 	}
 

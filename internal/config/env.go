@@ -32,6 +32,7 @@ type EnvVariables struct {
 	DbConnectionString       string
 	BackupDbConnectionString string
 	BackupFolderPath         string
+	BackupName               string
 	AWSS3LimitBytes          int64
 	AWSS3BackupBucketName    string
 	RedisAddress             string
@@ -64,6 +65,11 @@ func ParseEnv() (*EnvVariables, error) {
 		return nil, err
 	}
 
+	backupName, err := getEnv("BACKUP_NAME")
+	if err != nil {
+		return nil, err
+	}
+
 	awsS3LimitBytes, err := getEnvInt("AWS_S3_LIMIT_BYTES")
 	if err != nil {
 		return nil, err
@@ -91,6 +97,7 @@ func ParseEnv() (*EnvVariables, error) {
 		DbConnectionString:       dbConnectionString,
 		BackupDbConnectionString: backupDbConnectionString,
 		BackupFolderPath:         backupFolderPath,
+		BackupName:               backupName,
 		AWSS3LimitBytes:          awsS3LimitBytes,
 		AWSS3BackupBucketName:    awsS3BackupBucketName,
 		RedisAddress:             redisAddress,

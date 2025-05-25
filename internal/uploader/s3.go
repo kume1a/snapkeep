@@ -14,15 +14,23 @@ type UploadFileToS3Input struct {
 	Context     context.Context
 	S3Client    *s3.Client
 	Bucket      string
+	Prefix      string
 	Key         string
 	Body        io.Reader
 	ContentType string
 }
 
 func UploadFileToS3(input UploadFileToS3Input) (string, error) {
+	key := ""
+	if input.Prefix != "" {
+		key = input.Prefix + "/" + input.Key
+	} else {
+		key = input.Key
+	}
+
 	s3Input := &s3.PutObjectInput{
 		Bucket:      &input.Bucket,
-		Key:         &input.Key,
+		Key:         &key,
 		Body:        input.Body,
 		ContentType: &input.ContentType,
 		ACL:         types.ObjectCannedACLPublicRead,

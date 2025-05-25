@@ -18,16 +18,11 @@ func CreateBackupDataTaskHandler(cfg *config.ResourceConfig) asynq.HandlerFunc {
 			return fmt.Errorf("json.Unmarshal failed: %v: %w", err, asynq.SkipRetry)
 		}
 
-		logger.Debug(
-			"Processing backup data task with payload: database=%s, folder=%s",
-			p.BackupDBConnectionString,
-			p.BackupFolderPath,
-		)
-
 		if err := backup.Run(
 			ctx, cfg,
 			p.BackupDBConnectionString,
 			p.BackupFolderPath,
+			p.BackupName,
 		); err != nil {
 			logger.Fatal("Failed to run backup: ", err)
 			return err

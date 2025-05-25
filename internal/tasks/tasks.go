@@ -11,6 +11,7 @@ const (
 )
 
 type BackupDataPayload struct {
+	BackupName               string
 	BackupDBConnectionString string
 	BackupFolderPath         string
 }
