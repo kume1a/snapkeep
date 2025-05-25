@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os"
 	"snapkeep/internal/config"
-	"snapkeep/internal/uploader"
 	"snapkeep/pkg/logger"
 	"time"
 
@@ -68,7 +67,7 @@ func Run(
 		return err
 	}
 
-	uploadedBackupDatabaseZipURL, err := uploader.UploadFileToS3(uploader.UploadFileToS3Input{
+	uploadedBackupDatabaseZipURL, err := UploadFileToS3(UploadFileToS3Input{
 		Context:     ctx,
 		S3Client:    cfg.S3Client,
 		Bucket:      envVariables.AWSS3BackupBucketName,
@@ -89,7 +88,7 @@ func Run(
 		return err
 	}
 
-	uploadedBackupFolderZipURL, err := uploader.UploadFileToS3(uploader.UploadFileToS3Input{
+	uploadedBackupFolderZipURL, err := UploadFileToS3(UploadFileToS3Input{
 		Context:     ctx,
 		S3Client:    cfg.S3Client,
 		Bucket:      envVariables.AWSS3BackupBucketName,
