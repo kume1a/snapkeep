@@ -24,7 +24,7 @@ func CreateBackupDataTaskHandler(cfg *config.ResourceConfig) asynq.HandlerFunc {
 			p.BackupFolderPath,
 			p.BackupName,
 		); err != nil {
-			logger.Fatal("Failed to run backup: ", err)
+			logger.Error("Failed to run backup: ", err)
 			return err
 		}
 

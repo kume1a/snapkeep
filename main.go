@@ -66,13 +66,15 @@ func main() {
 		return
 	}
 
-	info, err := taskClient.Enqueue(task)
-	if err != nil {
+	if _, err := taskClient.Enqueue(task); err != nil {
 		logger.Fatal("Failed to enqueue backup data task: ", err)
 		return
 	}
 
-	logger.Info("Enqueued task: id=" + info.ID + ", type=" + info.Type + ", queue=" + info.Queue)
+	if err := config.ConfigureWebServer(); err != nil {
+		logger.Fatal("Failed to configure web server: ", err)
+		return
+	}
 
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, os.Interrupt, syscall.SIGTERM)

@@ -13,7 +13,7 @@ import (
 func InitializeTaskClient() (*asynq.Client, error) {
 	redisClientOpt, err := getRedisClientOpt()
 	if err != nil {
-		logger.Error("Failed to get Redis client options: ", err)
+		logger.Fatal("Failed to get Redis client options: ", err)
 		return nil, err
 	}
 
@@ -25,7 +25,7 @@ func InitializeTaskClient() (*asynq.Client, error) {
 func InitializeTaskServer(cfg *config.ResourceConfig) (*asynq.Server, error) {
 	redisClientOpt, err := getRedisClientOpt()
 	if err != nil {
-		logger.Error("Failed to get Redis client options: ", err)
+		logger.Fatal("Failed to get Redis client options: ", err)
 		return nil, err
 	}
 
