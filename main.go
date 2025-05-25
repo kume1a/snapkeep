@@ -6,6 +6,7 @@ import (
 	"os/signal"
 	"snapkeep/internal/config"
 	"snapkeep/internal/tasks"
+	"snapkeep/internal/webserver"
 	"snapkeep/pkg/logger"
 	"syscall"
 )
@@ -15,11 +16,11 @@ func main() {
 
 	config.LoadEnv()
 
-	envVars, err := config.ParseEnv()
-	if err != nil {
-		logger.Fatal("Failed to parse environment variables: ", err)
-		return
-	}
+	// envVars, err := config.ParseEnv()
+	// if err != nil {
+	// 	logger.Fatal("Failed to parse environment variables: ", err)
+	// 	return
+	// }
 
 	db, err := config.InitializeDB()
 	if err != nil {
@@ -54,24 +55,24 @@ func main() {
 		return
 	}
 
-	task, err := tasks.NewBackupDataTask(
-		tasks.BackupDataPayload{
-			BackupName:               envVars.BackupName,
-			BackupDBConnectionString: envVars.BackupDbConnectionString,
-			BackupFolderPath:         envVars.BackupFolderPath,
-		},
-	)
-	if err != nil {
-		logger.Fatal("Failed to create backup data task: ", err)
-		return
-	}
+	// task, err := tasks.NewBackupDataTask(
+	// 	tasks.BackupDataPayload{
+	// 		BackupName:               envVars.BackupName,
+	// 		BackupDBConnectionString: envVars.BackupDbConnectionString,
+	// 		BackupFolderPath:         envVars.BackupFolderPath,
+	// 	},
+	// )
+	// if err != nil {
+	// 	logger.Fatal("Failed to create backup data task: ", err)
+	// 	return
+	// }
 
-	if _, err := taskClient.Enqueue(task); err != nil {
-		logger.Fatal("Failed to enqueue backup data task: ", err)
-		return
-	}
+	// if _, err := taskClient.Enqueue(task); err != nil {
+	// 	logger.Fatal("Failed to enqueue backup data task: ", err)
+	// 	return
+	// }
 
-	if err := config.ConfigureWebServer(); err != nil {
+	if err := webserver.ConfigureWebServer(); err != nil {
 		logger.Fatal("Failed to configure web server: ", err)
 		return
 	}

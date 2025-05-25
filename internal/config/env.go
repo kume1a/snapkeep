@@ -37,6 +37,9 @@ type EnvVariables struct {
 	AWSS3BackupBucketName    string
 	RedisAddress             string
 	RedisPassword            string
+	AdminPassword            string
+	AccessTokenSecret        string
+	AccessTokenExpSeconds    int64
 }
 
 func ParseEnv() (*EnvVariables, error) {
@@ -90,6 +93,21 @@ func ParseEnv() (*EnvVariables, error) {
 		return nil, err
 	}
 
+	adminPassword, err := getEnv("ADMIN_PASSWORD")
+	if err != nil {
+		return nil, err
+	}
+
+	accessTokenSecret, err := getEnv("ACCESS_TOKEN_SECRET")
+	if err != nil {
+		return nil, err
+	}
+
+	accessTokenExpSeconds, err := getEnvInt("ACCESS_TOKEN_EXP_SECONDS")
+	if err != nil {
+		return nil, err
+	}
+
 	return &EnvVariables{
 		IsDevelopment:            environment == "development",
 		IsProduction:             environment == "production",
@@ -102,6 +120,9 @@ func ParseEnv() (*EnvVariables, error) {
 		AWSS3BackupBucketName:    awsS3BackupBucketName,
 		RedisAddress:             redisAddress,
 		RedisPassword:            redisPassword,
+		AdminPassword:            adminPassword,
+		AccessTokenSecret:        accessTokenSecret,
+		AccessTokenExpSeconds:    accessTokenExpSeconds,
 	}, nil
 }
 
