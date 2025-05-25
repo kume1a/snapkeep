@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"snapkeep/internal/config"
+	"snapkeep/internal/db"
 	"snapkeep/pkg/logger"
 	"time"
 
@@ -33,13 +34,13 @@ func Run(
 	zipedBackupDatabaseDestination := directoryPath + "/backup_" + timestamp + ".zip"
 	zippedBackupFolderDestination := directoryPath + "/" + filepath.Base(backupFolderPath) + "_" + timestamp + ".zip"
 
-	db, err := gorm.Open(postgres.Open(backupDBConnectionString), &gorm.Config{})
+	database, err := gorm.Open(postgres.Open(backupDBConnectionString), &gorm.Config{})
 	if err != nil {
 		logger.Error("Failed to open backup database:", err)
 		return err
 	}
 
-	if _, err := DumpDatabaseTablesToJson(db, directoryPath); err != nil {
+	if _, err := DumpDatabaseTablesToJson(database, directoryPath); err != nil {
 		logger.Error("Failed to dump database tables to JSON:", err)
 		return err
 	}
@@ -105,6 +106,30 @@ func Run(
 
 	logger.Debug("Uploaded zipped backup database URL:", uploadedBackupDatabaseZipURL)
 	logger.Debug("Uploaded zipped backup folder URL:", uploadedBackupFolderZipURL)
+
+	dbFileInfo, err := os.Stat(zippedBackupDatabasePath)
+	if err != nil {
+		logger.Error("Failed to stat zipped backup database file:", err)
+		return err
+	}
+	dbSizeBytes := uint64(dbFileInfo.Size())
+
+	folderFileInfo, err := os.Stat(zippedBackupFolderPath)
+	if err != nil {
+		logger.Error("Failed to stat zipped backup folder file:", err)
+		return err
+	}
+	folderSizeBytes := uint64(folderFileInfo.Size())
+
+	backupEntity := &db.Backup{
+		BackupDBSizeBytes:     dbSizeBytes,
+		BackupDBUrl:           uploadedBackupDatabaseZipURL,
+		BackupFolderSizeBytes: folderSizeBytes,
+		BackupFolderUrl:       uploadedBackupFolderZipURL,
+	}
+	if err := cfg.DB.Create(backupEntity).Error; err != nil {
+		logger.Error("Failed to save backup entity to DB:", err)
+	}
 
 	logger.Info("Backup completed successfully.")
 

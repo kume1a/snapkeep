@@ -1,6 +1,7 @@
 package config
 
 import (
+	"snapkeep/internal/db"
 	"snapkeep/pkg/logger"
 
 	"gorm.io/driver/postgres"
@@ -14,13 +15,13 @@ func InitializeDB() (*gorm.DB, error) {
 		return nil, err
 	}
 
-	db, err := gorm.Open(postgres.Open(envVars.DbConnectionString), &gorm.Config{})
+	database, err := gorm.Open(postgres.Open(envVars.DbConnectionString), &gorm.Config{})
 	if err != nil {
 		logger.Fatal("failed to connect database, err:", err)
 		return nil, err
 	}
 
-	db.AutoMigrate(&Backup{})
+	database.AutoMigrate(&db.Backup{})
 
-	return db, nil
+	return database, nil
 }
