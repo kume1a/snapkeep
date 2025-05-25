@@ -42,7 +42,7 @@ func UploadFileToS3(input UploadFileToS3Input) (string, error) {
 		return "", err
 	}
 
-	publicURL := "https://" + input.Bucket + ".s3.amazonaws.com/" + input.Key
+	publicURL := "https://" + input.Bucket + ".s3.amazonaws.com/" + key
 	return publicURL, nil
 }
 

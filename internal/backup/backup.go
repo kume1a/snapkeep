@@ -67,7 +67,6 @@ func Run(
 		logger.Error("Failed to open zipped backup database file for upload:", err)
 		return err
 	}
-	defer zippedBackupDatabaseFile.Close()
 
 	uploadedBackupDatabaseZipURL, err := uploader.UploadFileToS3(uploader.UploadFileToS3Input{
 		Context:     ctx,
@@ -78,6 +77,7 @@ func Run(
 		Body:        zippedBackupDatabaseFile,
 		ContentType: "application/zip",
 	})
+	zippedBackupDatabaseFile.Close()
 	if err != nil {
 		logger.Error("Failed to upload zipped backup database to S3:", err)
 		return err
@@ -88,7 +88,6 @@ func Run(
 		logger.Error("Failed to open zipped backup folder file for upload:", err)
 		return err
 	}
-	defer zippedBackupFolderFile.Close()
 
 	uploadedBackupFolderZipURL, err := uploader.UploadFileToS3(uploader.UploadFileToS3Input{
 		Context:     ctx,
@@ -99,6 +98,7 @@ func Run(
 		Body:        zippedBackupFolderFile,
 		ContentType: "application/zip",
 	})
+	zippedBackupFolderFile.Close()
 	if err != nil {
 		logger.Error("Failed to upload zipped backup folder to S3:", err)
 		return err
