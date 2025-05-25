@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/signal"
 	"snapkeep/internal/config"
+	"snapkeep/internal/db"
 	"snapkeep/internal/tasks"
 	"snapkeep/internal/webserver"
 	"snapkeep/pkg/logger"
@@ -22,7 +23,7 @@ func main() {
 	// 	return
 	// }
 
-	db, err := config.InitializeDB()
+	db, err := db.InitializeDB()
 	if err != nil {
 		logger.Fatal("Failed to initialize database: ", err)
 		return
