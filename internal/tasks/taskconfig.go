@@ -61,7 +61,6 @@ func InitializeTaskScheduler(cfg *config.ResourceConfig) (*asynq.Scheduler, erro
 		return nil, err
 	}
 
-	// Set scheduler location to Asia/Tbilisi
 	location, err := time.LoadLocation("Asia/Tbilisi")
 	if err != nil {
 		logger.Fatal("Failed to load Asia/Tbilisi location: ", err)

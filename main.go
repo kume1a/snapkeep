@@ -10,6 +10,7 @@ import (
 	"snapkeep/internal/tasks"
 	"snapkeep/internal/webserver"
 	"syscall"
+	_ "time/tzdata"
 )
 
 func main() {
