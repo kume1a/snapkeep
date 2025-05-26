@@ -8,18 +8,15 @@ RUN go mod download
 COPY *.go ./
 COPY ./internal ./internal
 
-RUN CGO_ENABLED=0 GOOS=linux go build -o /sonifybin
-
-# # Install goose
-# RUN go install github.com/pressly/goose/v3/cmd/goose@latest
+RUN CGO_ENABLED=0 GOOS=linux go build -o /snapkeepbin
 
 RUN apk add --no-cache make
 
-EXPOSE 8000
+EXPOSE 8001
 
 ENV ENVIRONMENT=production
 ENV PATH="$PATH:/root/.local/bin"
 
 # ENTRYPOINT ["tail", "-f", "/dev/null"]
 
-CMD ["/bin/bash", "-c", "make migrate-prod;/sonifybin"]
+CMD ["/snapkeepbin"]

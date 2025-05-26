@@ -35,3 +35,34 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+
+  snapkeep:
+    build: .
+    container_name: snapkeep_app
+    depends_on:
+      snapkeepdb:
+        condition: service_healthy
+      snapkeepredis:
+        condition: service_healthy
+    environment:
+      ENVIRONMENT: ${ENVIRONMENT}
+      PORT: ${PORT}
+      DB_CONNECTION_STRING: ${DB_CONNECTION_STRING}
+      BACKUP_DB_CONNECTION_STRING: ${BACKUP_DB_CONNECTION_STRING}
+      BACKUP_FOLDER_PATH: /app/backups
+      BACKUP_NAME: ${BACKUP_NAME}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+      AWS_REGION: ${AWS_REGION}
+      AWS_S3_LIMIT_BYTES: ${AWS_S3_LIMIT_BYTES}
+      AWS_S3_BACKUP_BUCKET_NAME: ${AWS_S3_BACKUP_BUCKET_NAME}
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+      REDIS_ADDRESS: ${REDIS_ADDRESS}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD}
+      ACCESS_TOKEN_SECRET: ${ACCESS_TOKEN_SECRET}
+      ACCESS_TOKEN_EXP_SECONDS: ${ACCESS_TOKEN_EXP_SECONDS}
+    ports:
+      - "8001:8001"
+    volumes:
+      - ${BACKUP_FOLDER_PATH}:/app/backups
+    restart: unless-stopped
