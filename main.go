@@ -17,12 +17,6 @@ func main() {
 
 	config.LoadEnv()
 
-	envVars, err := config.ParseEnv()
-	if err != nil {
-		logger.Fatal("Failed to parse environment variables: ", err)
-		return
-	}
-
 	db, err := db.InitializeDB()
 	if err != nil {
 		logger.Fatal("Failed to initialize database: ", err)
@@ -56,20 +50,14 @@ func main() {
 		return
 	}
 
-	task, err := tasks.NewBackupDataTask(
-		tasks.BackupDataPayload{
-			BackupName:               envVars.BackupName,
-			BackupDBConnectionString: envVars.BackupDbConnectionString,
-			BackupFolderPath:         envVars.BackupFolderPath,
-		},
-	)
+	taskScheduler, err := tasks.InitializeTaskScheduler(cfg.ResourceConfig)
 	if err != nil {
-		logger.Fatal("Failed to create backup data task: ", err)
+		logger.Fatal("Failed to initialize task scheduler: ", err)
 		return
 	}
 
-	if _, err := taskClient.Enqueue(task); err != nil {
-		logger.Fatal("Failed to enqueue backup data task: ", err)
+	if err := tasks.EnqueueAndScheduleTasks(taskClient, taskScheduler); err != nil {
+		logger.Fatal("Failed to enqueue and schedule tasks: ", err)
 		return
 	}
 
@@ -81,6 +69,7 @@ func main() {
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, os.Interrupt, syscall.SIGTERM)
 	<-quit
-	logger.Info("Shutting down task server...")
+	logger.Info("Shutting down task server and scheduler...")
 	taskServer.Shutdown()
+	taskScheduler.Shutdown()
 }
