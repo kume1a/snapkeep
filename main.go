@@ -17,11 +17,11 @@ func main() {
 
 	config.LoadEnv()
 
-	// envVars, err := config.ParseEnv()
-	// if err != nil {
-	// 	logger.Fatal("Failed to parse environment variables: ", err)
-	// 	return
-	// }
+	envVars, err := config.ParseEnv()
+	if err != nil {
+		logger.Fatal("Failed to parse environment variables: ", err)
+		return
+	}
 
 	db, err := db.InitializeDB()
 	if err != nil {
@@ -56,22 +56,22 @@ func main() {
 		return
 	}
 
-	// task, err := tasks.NewBackupDataTask(
-	// 	tasks.BackupDataPayload{
-	// 		BackupName:               envVars.BackupName,
-	// 		BackupDBConnectionString: envVars.BackupDbConnectionString,
-	// 		BackupFolderPath:         envVars.BackupFolderPath,
-	// 	},
-	// )
-	// if err != nil {
-	// 	logger.Fatal("Failed to create backup data task: ", err)
-	// 	return
-	// }
+	task, err := tasks.NewBackupDataTask(
+		tasks.BackupDataPayload{
+			BackupName:               envVars.BackupName,
+			BackupDBConnectionString: envVars.BackupDbConnectionString,
+			BackupFolderPath:         envVars.BackupFolderPath,
+		},
+	)
+	if err != nil {
+		logger.Fatal("Failed to create backup data task: ", err)
+		return
+	}
 
-	// if _, err := taskClient.Enqueue(task); err != nil {
-	// 	logger.Fatal("Failed to enqueue backup data task: ", err)
-	// 	return
-	// }
+	if _, err := taskClient.Enqueue(task); err != nil {
+		logger.Fatal("Failed to enqueue backup data task: ", err)
+		return
+	}
 
 	if err := webserver.ConfigureWebServer(); err != nil {
 		logger.Fatal("Failed to configure web server: ", err)

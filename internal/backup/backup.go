@@ -2,14 +2,15 @@ package backup
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
+	"path/filepath"
 	"snapkeep/internal/config"
 	"snapkeep/internal/db"
+	"snapkeep/internal/shared"
 	"snapkeep/pkg/logger"
 	"time"
-
-	"path/filepath"
 
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -30,9 +31,9 @@ func Run(
 
 	directoryPath := "./tmp/" + backupName
 
-	timestamp := fmt.Sprint(time.Now().UnixMilli())
-	zipedBackupDatabaseDestination := directoryPath + "/backup_" + timestamp + ".zip"
-	zippedBackupFolderDestination := directoryPath + "/" + filepath.Base(backupFolderPath) + "_" + timestamp + ".zip"
+	formattedNow := time.Now().Format("02_01_2006_15:04")
+	zipedBackupDatabaseDestination := directoryPath + "/database_" + formattedNow + ".zip"
+	zippedBackupFolderDestination := directoryPath + "/folder_" + formattedNow + ".zip"
 
 	database, err := gorm.Open(postgres.Open(backupDBConnectionString), &gorm.Config{})
 	if err != nil {
@@ -61,6 +62,55 @@ func Run(
 
 	logger.Debug("Zipped backup database path:", zippedBackupDatabasePath)
 	logger.Debug("Zipped backup folder path:", zippedBackupFolderPath)
+
+	latestBackup, err := db.GetLatestActiveBackup(cfg.DB)
+	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+		logger.Error("Failed to get latest active backup:", err)
+		return err
+	}
+
+	if err == nil && latestBackup != nil {
+		if err := DeleteS3Folder(
+			ctx, cfg.S3Client,
+			envVariables.AWSS3BackupBucketName,
+			latestBackup.BackupName,
+		); err != nil {
+			logger.Error("Failed to delete S3 folder:", err)
+			return err
+		}
+
+		if err := db.MarkBackupAsDeleted(cfg.DB, latestBackup.ID); err != nil {
+			logger.Error("Failed to mark backup as deleted in DB:", err)
+			return err
+		}
+	}
+
+	zippedBackupDbFileSize, err := shared.GetFileSize(zippedBackupDatabasePath)
+	if err != nil {
+		logger.Error("Failed to get zipped backup database file size:", err)
+		return err
+	}
+
+	zippedBackupFolderSize, err := shared.GetFileSize(zippedBackupFolderPath)
+	if err != nil {
+		logger.Error("Failed to get zipped backup folder file size:", err)
+		return err
+	}
+
+	s3Size, err := GetS3FolderSize(ctx, cfg.S3Client, envVariables.AWSS3BackupBucketName, "")
+	if err != nil {
+		logger.Error("Failed to get S3 folder size:", err)
+		return err
+	}
+
+	totalSizeAfterUpload := s3Size.InBytes +
+		zippedBackupDbFileSize.InBytes +
+		zippedBackupFolderSize.InBytes
+
+	if totalSizeAfterUpload > envVariables.AWSS3LimitBytes {
+		logger.Error("S3 usage with new backup would exceed limit, aborting backup upload.")
+		return fmt.Errorf("S3 usage with new backup would exceed limit, aborting backup upload")
+	}
 
 	zippedBackupDatabaseFile, err := os.Open(zippedBackupDatabasePath)
 	if err != nil {
@@ -107,25 +157,13 @@ func Run(
 	logger.Debug("Uploaded zipped backup database URL:", uploadedBackupDatabaseZipURL)
 	logger.Debug("Uploaded zipped backup folder URL:", uploadedBackupFolderZipURL)
 
-	dbFileInfo, err := os.Stat(zippedBackupDatabasePath)
-	if err != nil {
-		logger.Error("Failed to stat zipped backup database file:", err)
-		return err
-	}
-	dbSizeBytes := uint64(dbFileInfo.Size())
-
-	folderFileInfo, err := os.Stat(zippedBackupFolderPath)
-	if err != nil {
-		logger.Error("Failed to stat zipped backup folder file:", err)
-		return err
-	}
-	folderSizeBytes := uint64(folderFileInfo.Size())
-
 	backupEntity := &db.Backup{
-		BackupDBSizeBytes:     dbSizeBytes,
+		BackupName:            backupName,
+		BackupDBSizeBytes:     uint64(zippedBackupDbFileSize.InBytes),
 		BackupDBUrl:           uploadedBackupDatabaseZipURL,
-		BackupFolderSizeBytes: folderSizeBytes,
+		BackupFolderSizeBytes: uint64(zippedBackupFolderSize.InBytes),
 		BackupFolderUrl:       uploadedBackupFolderZipURL,
+		Status:                db.BackupStatusActive,
 	}
 	if err := cfg.DB.Create(backupEntity).Error; err != nil {
 		logger.Error("Failed to save backup entity to DB:", err)

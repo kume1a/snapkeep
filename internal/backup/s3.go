@@ -7,7 +7,7 @@ import (
 	"snapkeep/pkg/logger"
 
 	"github.com/aws/aws-sdk-go-v2/service/s3"
-	"github.com/aws/aws-sdk-go-v2/service/s3/types"
+	s3types "github.com/aws/aws-sdk-go-v2/service/s3/types"
 )
 
 type UploadFileToS3Input struct {
@@ -21,19 +21,19 @@ type UploadFileToS3Input struct {
 }
 
 func UploadFileToS3(input UploadFileToS3Input) (string, error) {
-	key := ""
+	fullKey := ""
 	if input.Prefix != "" {
-		key = input.Prefix + "/" + input.Key
+		fullKey = input.Prefix + "/" + input.Key
 	} else {
-		key = input.Key
+		fullKey = input.Key
 	}
 
 	s3Input := &s3.PutObjectInput{
 		Bucket:      &input.Bucket,
-		Key:         &key,
+		Key:         &fullKey,
 		Body:        input.Body,
 		ContentType: &input.ContentType,
-		ACL:         types.ObjectCannedACLPublicRead,
+		ACL:         s3types.ObjectCannedACLPublicRead,
 	}
 
 	_, err := input.S3Client.PutObject(input.Context, s3Input)
@@ -42,7 +42,7 @@ func UploadFileToS3(input UploadFileToS3Input) (string, error) {
 		return "", err
 	}
 
-	publicURL := "https://" + input.Bucket + ".s3.amazonaws.com/" + key
+	publicURL := "https://" + input.Bucket + ".s3.amazonaws.com/" + fullKey
 	return publicURL, nil
 }
 
@@ -76,4 +76,61 @@ func GetS3FolderSize(
 	size := shared.ConvertBytes(total)
 
 	return &size, nil
+}
+
+func DeleteS3File(
+	ctx context.Context,
+	client *s3.Client, bucket,
+	prefix, key string,
+) error {
+	fullKey := key
+	if prefix != "" {
+		fullKey = prefix + "/" + key
+	}
+
+	_, err := client.DeleteObject(ctx, &s3.DeleteObjectInput{
+		Bucket: &bucket,
+		Key:    &fullKey,
+	})
+	return err
+}
+
+func DeleteS3Folder(ctx context.Context, client *s3.Client, bucket, prefix string) error {
+	input := &s3.ListObjectsV2Input{
+		Bucket: &bucket,
+		Prefix: &prefix,
+	}
+
+	paginator := s3.NewListObjectsV2Paginator(client, input)
+
+	for paginator.HasMorePages() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return err
+		}
+
+		var objectsToDelete []s3types.ObjectIdentifier
+		for _, obj := range page.Contents {
+			objectsToDelete = append(objectsToDelete, s3types.ObjectIdentifier{Key: obj.Key})
+		}
+
+		if len(objectsToDelete) > 0 {
+			quiet := true
+			_, err := client.DeleteObjects(
+				ctx,
+				&s3.DeleteObjectsInput{
+					Bucket: &bucket,
+					Delete: &s3types.Delete{
+						Objects: objectsToDelete,
+						Quiet:   &quiet,
+					},
+				},
+			)
+			if err != nil {
+				continue
+			}
+		}
+	}
+
+	return nil
 }
