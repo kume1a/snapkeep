@@ -3,7 +3,7 @@ package backup
 import (
 	"encoding/json"
 	"os"
-	"snapkeep/pkg/logger"
+	"snapkeep/internal/logger"
 
 	"gorm.io/gorm"
 )

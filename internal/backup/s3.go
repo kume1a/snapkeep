@@ -3,8 +3,8 @@ package backup
 import (
 	"context"
 	"io"
+	"snapkeep/internal/logger"
 	"snapkeep/internal/shared"
-	"snapkeep/pkg/logger"
 
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	s3types "github.com/aws/aws-sdk-go-v2/service/s3/types"

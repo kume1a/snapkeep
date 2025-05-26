@@ -1,7 +1,7 @@
 package webserver
 
 import (
-	"snapkeep/pkg/logger"
+	"snapkeep/internal/logger"
 
 	"github.com/gin-gonic/gin"
 )

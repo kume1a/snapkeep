@@ -2,7 +2,7 @@ package config
 
 import (
 	"context"
-	"snapkeep/pkg/logger"
+	"snapkeep/internal/logger"
 
 	awsconfig "github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/s3"

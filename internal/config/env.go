@@ -4,7 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"snapkeep/pkg/logger"
+	"snapkeep/internal/logger"
 	"strconv"
 
 	"github.com/joho/godotenv"

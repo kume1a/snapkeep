@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"snapkeep/internal/backup"
 	"snapkeep/internal/config"
-	"snapkeep/pkg/logger"
+	"snapkeep/internal/logger"
 
 	"github.com/hibiken/asynq"
 )

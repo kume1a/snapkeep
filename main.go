@@ -6,9 +6,9 @@ import (
 	"os/signal"
 	"snapkeep/internal/config"
 	"snapkeep/internal/db"
+	"snapkeep/internal/logger"
 	"snapkeep/internal/tasks"
 	"snapkeep/internal/webserver"
-	"snapkeep/pkg/logger"
 	"syscall"
 )
 

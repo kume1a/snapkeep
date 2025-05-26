@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"snapkeep/internal/config"
-	"snapkeep/pkg/logger"
+	"snapkeep/internal/logger"
 
 	"github.com/hibiken/asynq"
 )

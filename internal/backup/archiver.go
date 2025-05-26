@@ -5,7 +5,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
-	"snapkeep/pkg/logger"
+	"snapkeep/internal/logger"
 )
 
 func ZipDirectory(dirPath, zipFileName string) (string, error) {

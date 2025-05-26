@@ -2,7 +2,7 @@ package db
 
 import (
 	"snapkeep/internal/config"
-	"snapkeep/pkg/logger"
+	"snapkeep/internal/logger"
 
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"

@@ -8,8 +8,8 @@ import (
 	"path/filepath"
 	"snapkeep/internal/config"
 	"snapkeep/internal/db"
+	"snapkeep/internal/logger"
 	"snapkeep/internal/shared"
-	"snapkeep/pkg/logger"
 	"time"
 
 	"gorm.io/driver/postgres"
