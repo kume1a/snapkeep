@@ -1,0 +1,40 @@
+name: CD
+
+on:
+  push:
+    branches: ['main']
+
+jobs:
+  build:
+    runs-on: self-hosted
+    environment: production
+
+    steps:
+      - uses: actions/checkout@v3
+      - name: Build and start containers (no cache, always pull latest)
+        run: docker compose up -d --pull always --build --remove-orphans
+      - name: Remove dangling images
+        run: docker image prune --all --force
+      - name: Remove unused volumes
+        run: docker volume prune --force
+
+    env:
+      ENVIRONMENT: ${{ vars.ENVIRONMENT }}
+      PORT: ${{ vars.PORT }}
+      DB_CONNECTION_STRING: ${{ vars.DB_CONNECTION_STRING }}
+      BACKUP_DB_CONNECTION_STRING: ${{ vars.BACKUP_DB_CONNECTION_STRING }}
+      BACKUP_FOLDER_PATH: ${{ vars.BACKUP_FOLDER_PATH }}
+      BACKUP_NAME: ${{ vars.BACKUP_NAME }}
+      AWS_ACCESS_KEY_ID: ${{ vars.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ vars.AWS_SECRET_ACCESS_KEY }}
+      AWS_REGION: ${{ vars.AWS_REGION }}
+      AWS_S3_LIMIT_BYTES: ${{ vars.AWS_S3_LIMIT_BYTES }}
+      AWS_S3_BACKUP_BUCKET_NAME: ${{ vars.AWS_S3_BACKUP_BUCKET_NAME }}
+      REDIS_PASSWORD: ${{ vars.REDIS_PASSWORD }}
+      REDIS_ADDRESS: ${{ vars.REDIS_ADDRESS }}
+      ADMIN_PASSWORD: ${{ vars.ADMIN_PASSWORD }}
+      ACCESS_TOKEN_SECRET: ${{ vars.ACCESS_TOKEN_SECRET }}
+      ACCESS_TOKEN_EXP_SECONDS: ${{ vars.ACCESS_TOKEN_EXP_SECONDS }}
+      POSTGRES_PASSWORD: ${{ vars.POSTGRES_PASSWORD }}
+      POSTGRES_USER: ${{ vars.POSTGRES_USER }}
+      POSTGRES_DB: ${{ vars.POSTGRES_DB }}
