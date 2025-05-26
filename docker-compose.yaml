@@ -66,3 +66,5 @@ services:
     volumes:
       - ${BACKUP_FOLDER_PATH}:/app/backups
     restart: unless-stopped
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
