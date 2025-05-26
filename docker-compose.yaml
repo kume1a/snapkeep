@@ -1,6 +1,5 @@
 volumes:
   snapkeep_postgres_data:
-  snapkeep_redis_data:
 
 services:
   snapkeepdb:
@@ -27,8 +26,6 @@ services:
       - "6380:6379"
     environment:
       REDIS_PASSWORD: ${REDIS_PASSWORD}
-    volumes:
-      - snapkeep_redis_data:/data
     command: /bin/sh -c "redis-server --requirepass $$REDIS_PASSWORD"
     healthcheck:
       test: ["CMD-SHELL", "redis-cli -a $$REDIS_PASSWORD ping || exit 1"]
