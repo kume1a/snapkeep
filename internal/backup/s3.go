@@ -20,6 +20,26 @@ type UploadFileToS3Input struct {
 	ContentType string
 }
 
+type progressReader struct {
+	reader     io.Reader
+	total      int64
+	read       int64
+	logEvery   int64
+	lastLogged int64
+}
+
+func (p *progressReader) Read(b []byte) (int, error) {
+	n, err := p.reader.Read(b)
+	if n > 0 {
+		p.read += int64(n)
+		if p.read-p.lastLogged >= p.logEvery || err == io.EOF {
+			logger.Info("S3 upload progress: ", p.read, "/", p.total, " bytes")
+			p.lastLogged = p.read
+		}
+	}
+	return n, err
+}
+
 func UploadFileToS3(input UploadFileToS3Input) (string, error) {
 	fullKey := ""
 	if input.Prefix != "" {
@@ -28,12 +48,29 @@ func UploadFileToS3(input UploadFileToS3Input) (string, error) {
 		fullKey = input.Key
 	}
 
+	var body io.Reader = input.Body
+	var contentLength *int64 = nil
+	if seeker, ok := input.Body.(io.Seeker); ok {
+		if size, err := seeker.Seek(0, io.SeekEnd); err == nil {
+			_, _ = seeker.Seek(0, io.SeekStart)
+			body = &progressReader{
+				reader:   input.Body,
+				total:    size,
+				logEvery: 5 * 1024 * 1024, // log every 5MB
+			}
+			contentLength = &size
+		}
+	}
+
 	s3Input := &s3.PutObjectInput{
 		Bucket:      &input.Bucket,
 		Key:         &fullKey,
-		Body:        input.Body,
+		Body:        body,
 		ContentType: &input.ContentType,
 		ACL:         s3types.ObjectCannedACLPublicRead,
+	}
+	if contentLength != nil {
+		s3Input.ContentLength = contentLength
 	}
 
 	_, err := input.S3Client.PutObject(input.Context, s3Input)
