@@ -5,18 +5,34 @@ import (
 	"os"
 	"snapkeep/internal/logger"
 
+	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
 
-func DumpDatabaseTablesToJson(db *gorm.DB, destPath string) ([]string, error) {
-	err := os.MkdirAll(destPath, 0755)
+func DumpDatabaseTablesToJson(
+	connectionString string,
+	destPath string,
+) ([]string, error) {
+	database, err := gorm.Open(postgres.Open(connectionString), &gorm.Config{})
 	if err != nil {
+		logger.Error("Failed to open backup database:", err)
+		return nil, err
+	}
+
+	sqlDB, err := database.DB()
+	if err != nil {
+		logger.Error("Failed to get SQL DB from GORM:", err)
+		return nil, err
+	}
+	defer sqlDB.Close()
+
+	if err := os.MkdirAll(destPath, 0755); err != nil {
 		logger.Error("Failed to create"+destPath+" directory:", err)
 		return nil, err
 	}
 
 	var tableNames []string
-	err = db.
+	err = database.
 		Raw("SELECT table_name FROM information_schema.tables WHERE table_schema = 'public'").
 		Scan(&tableNames).
 		Error
@@ -29,7 +45,7 @@ func DumpDatabaseTablesToJson(db *gorm.DB, destPath string) ([]string, error) {
 	var filePaths []string
 	for _, tableName := range tableNames {
 		filePath := destPath + "/" + tableName + ".json"
-		err := dumpDatabaseTableToJSON(db, tableName, filePath)
+		err := dumpDatabaseTableToJSON(database, tableName, filePath)
 		if err != nil {
 			logger.Error("Failed to dump table:", tableName, "Error:", err)
 			return nil, err

@@ -12,7 +12,6 @@ import (
 	"snapkeep/internal/shared"
 	"time"
 
-	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
 
@@ -29,34 +28,29 @@ func Run(
 		return err
 	}
 
-	directoryPath := "./tmp/" + backupName
+	directoryPath := filepath.Join("./tmp", backupName)
+	dumpDatabaseFolderPath := filepath.Join(directoryPath, "database_dump")
 
 	formattedNow := time.Now().Format("02_01_2006_15:04")
-	zipedBackupDatabaseDestination := directoryPath + "/database_" + formattedNow + ".zip"
-	zippedBackupFolderDestination := directoryPath + "/folder_" + formattedNow + ".zip"
+	zippedBackupDatabaseDestination := filepath.Join(directoryPath, "database_"+formattedNow+".zip")
+	zippedBackupFolderDestination := filepath.Join(directoryPath, "folder_"+formattedNow+".zip")
 
-	database, err := gorm.Open(postgres.Open(backupDBConnectionString), &gorm.Config{})
-	if err != nil {
-		logger.Error("Failed to open backup database:", err)
-		return err
-	}
-
-	if _, err := DumpDatabaseTablesToJson(database, directoryPath); err != nil {
+	if _, err := DumpDatabaseTablesToJson(backupDBConnectionString, dumpDatabaseFolderPath); err != nil {
 		logger.Error("Failed to dump database tables to JSON:", err)
 		return err
 	}
 
 	logger.Debug("All tables exported successfully.")
 
-	zippedBackupDatabasePath, err := ZipDirectory(directoryPath, zipedBackupDatabaseDestination)
+	zippedBackupDatabasePath, err := ZipDirectory(dumpDatabaseFolderPath, zippedBackupDatabaseDestination)
 	if err != nil {
-		logger.Error("Failed to create zip file:", zipedBackupDatabaseDestination, "Error:", err)
+		logger.Error("Failed to create zip file:", zippedBackupDatabaseDestination, "Error:", err)
 		return err
 	}
 
 	zippedBackupFolderPath, err := ZipDirectory(backupFolderPath, zippedBackupFolderDestination)
 	if err != nil {
-		logger.Error("Failed to create zip file:", zipedBackupDatabaseDestination, "Error:", err)
+		logger.Error("Failed to create zip file:", zippedBackupFolderDestination, "Error:", err)
 		return err
 	}
 
