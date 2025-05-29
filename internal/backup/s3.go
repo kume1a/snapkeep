@@ -73,9 +73,7 @@ func UploadFileToS3(input UploadFileToS3Input) (string, error) {
 		s3Input.ContentLength = contentLength
 	}
 
-	// TODO remove later
-	bgContext := context.Background()
-	_, err := input.S3Client.PutObject(bgContext, s3Input)
+	_, err := input.S3Client.PutObject(input.Context, s3Input)
 	if err != nil {
 		logger.Error("Failed to upload file to S3: ", err)
 		return "", err

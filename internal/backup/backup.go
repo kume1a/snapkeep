@@ -112,8 +112,11 @@ func Run(
 		return err
 	}
 
+	uploadContext, cancelUploadContext := context.WithTimeout(ctx, 1*time.Hour)
+	defer cancelUploadContext()
+
 	uploadedBackupDatabaseZipURL, err := UploadFileToS3(UploadFileToS3Input{
-		Context:     ctx,
+		Context:     uploadContext,
 		S3Client:    cfg.S3Client,
 		Bucket:      envVariables.AWSS3BackupBucketName,
 		Prefix:      backupName,
@@ -134,7 +137,7 @@ func Run(
 	}
 
 	uploadedBackupFolderZipURL, err := UploadFileToS3(UploadFileToS3Input{
-		Context:     ctx,
+		Context:     uploadContext,
 		S3Client:    cfg.S3Client,
 		Bucket:      envVariables.AWSS3BackupBucketName,
 		Prefix:      backupName,

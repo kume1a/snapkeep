@@ -80,7 +80,7 @@ func InitializeTaskScheduler(cfg *config.ResourceConfig) (*asynq.Scheduler, erro
 	return scheduler, nil
 }
 
-func EnqueueAndScheduleTasks(
+func ScheduleBackgroundTasks(
 	client *asynq.Client,
 	scheduler *asynq.Scheduler,
 ) error {
@@ -99,11 +99,6 @@ func EnqueueAndScheduleTasks(
 	)
 	if err != nil {
 		logger.Fatal("Failed to create backup data task: ", err)
-		return err
-	}
-
-	if _, err := client.Enqueue(task); err != nil {
-		logger.Fatal("Failed to enqueue backup data task: ", err)
 		return err
 	}
 

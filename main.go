@@ -57,7 +57,7 @@ func main() {
 		return
 	}
 
-	if err := tasks.EnqueueAndScheduleTasks(taskClient, taskScheduler); err != nil {
+	if err := tasks.ScheduleBackgroundTasks(taskClient, taskScheduler); err != nil {
 		logger.Fatal("Failed to enqueue and schedule tasks: ", err)
 		return
 	}
