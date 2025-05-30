@@ -40,8 +40,6 @@ func Run(
 		return err
 	}
 
-	logger.Debug("All tables exported successfully.")
-
 	zippedBackupDatabasePath, err := ZipDirectory(dumpDatabaseFolderPath, zippedBackupDatabaseDestination)
 	if err != nil {
 		logger.Error("Failed to create zip file:", zippedBackupDatabaseDestination, "Error:", err)
@@ -53,9 +51,6 @@ func Run(
 		logger.Error("Failed to create zip file:", zippedBackupFolderDestination, "Error:", err)
 		return err
 	}
-
-	logger.Debug("Zipped backup database path:", zippedBackupDatabasePath)
-	logger.Debug("Zipped backup folder path:", zippedBackupFolderPath)
 
 	latestBackup, err := db.GetLatestActiveBackup(cfg.DB)
 	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {

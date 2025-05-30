@@ -33,7 +33,7 @@ func (p *progressReader) Read(b []byte) (int, error) {
 	if n > 0 {
 		p.read += int64(n)
 		if p.read-p.lastLogged >= p.logEvery || err == io.EOF {
-			logger.Info("S3 upload progress: ", p.read, "/", p.total, " bytes")
+			logger.Info("S3 upload progress: ", p.read/(1024*1024), "/", p.total/(1024*1024), " MB")
 			p.lastLogged = p.read
 		}
 	}
@@ -56,7 +56,7 @@ func UploadFileToS3(input UploadFileToS3Input) (string, error) {
 			body = &progressReader{
 				reader:   input.Body,
 				total:    size,
-				logEvery: 5 * 1024 * 1024, // log every 5MB
+				logEvery: 100 * 1024 * 1024, // log every 100MB
 			}
 			contentLength = &size
 		}

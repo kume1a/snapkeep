@@ -56,7 +56,6 @@ func zipWalkFunc(dirPath string, zipWriter *zip.Writer) filepath.WalkFunc {
 		}
 
 		if info.IsDir() {
-			logger.Debug("Adding directory to zip:", relPath)
 			header := &zip.FileHeader{
 				Name:   relPath + "/",
 				Method: zip.Store,
@@ -68,7 +67,6 @@ func zipWalkFunc(dirPath string, zipWriter *zip.Writer) filepath.WalkFunc {
 			return nil
 		}
 
-		logger.Debug("Adding file to zip:", relPath)
 		fileToZip, err := os.Open(path)
 		if err != nil {
 			logger.Error("Failed to open file for zipping:", path, "Error:", err)

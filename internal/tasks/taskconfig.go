@@ -102,7 +102,7 @@ func ScheduleBackgroundTasks(
 		return err
 	}
 
-	entryID, err := scheduler.Register("0 5 * * *", task)
+	entryID, err := scheduler.Register("0 5 */3 * *", task)
 	if err != nil {
 		log.Fatal(err)
 	}
