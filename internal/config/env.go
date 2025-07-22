@@ -6,6 +6,7 @@ import (
 	"os"
 	"snapkeep/internal/logger"
 	"strconv"
+	"strings"
 
 	"github.com/joho/godotenv"
 )
@@ -25,21 +26,25 @@ func LoadEnv() {
 	}
 }
 
+type BackupAppConfig struct {
+	Name               string
+	DbConnectionString string
+	PublicFolderPath   string // Optional - empty string means no folder backup
+}
+
 type EnvVariables struct {
-	IsDevelopment            bool
-	IsProduction             bool
-	Port                     string
-	DbConnectionString       string
-	BackupDbConnectionString string
-	BackupFolderPath         string
-	BackupName               string
-	AWSS3LimitBytes          int64
-	AWSS3BackupBucketName    string
-	RedisAddress             string
-	RedisPassword            string
-	AdminPassword            string
-	AccessTokenSecret        string
-	AccessTokenExpSeconds    int64
+	IsDevelopment         bool
+	IsProduction          bool
+	Port                  string
+	DbConnectionString    string
+	Applications          []BackupAppConfig
+	AWSS3LimitBytes       int64
+	AWSS3BackupBucketName string
+	RedisAddress          string
+	RedisPassword         string
+	AdminPassword         string
+	AccessTokenSecret     string
+	AccessTokenExpSeconds int64
 }
 
 func ParseEnv() (*EnvVariables, error) {
@@ -58,17 +63,7 @@ func ParseEnv() (*EnvVariables, error) {
 		return nil, err
 	}
 
-	backupDbConnectionString, err := getEnv("BACKUP_DB_CONNECTION_STRING")
-	if err != nil {
-		return nil, err
-	}
-
-	backupFolderPath, err := getEnv("BACKUP_FOLDER_PATH")
-	if err != nil {
-		return nil, err
-	}
-
-	backupName, err := getEnv("BACKUP_NAME")
+	applications, err := parseApplicationsConfig()
 	if err != nil {
 		return nil, err
 	}
@@ -109,21 +104,60 @@ func ParseEnv() (*EnvVariables, error) {
 	}
 
 	return &EnvVariables{
-		IsDevelopment:            environment == "development",
-		IsProduction:             environment == "production",
-		Port:                     port,
-		DbConnectionString:       dbConnectionString,
-		BackupDbConnectionString: backupDbConnectionString,
-		BackupFolderPath:         backupFolderPath,
-		BackupName:               backupName,
-		AWSS3LimitBytes:          awsS3LimitBytes,
-		AWSS3BackupBucketName:    awsS3BackupBucketName,
-		RedisAddress:             redisAddress,
-		RedisPassword:            redisPassword,
-		AdminPassword:            adminPassword,
-		AccessTokenSecret:        accessTokenSecret,
-		AccessTokenExpSeconds:    accessTokenExpSeconds,
+		IsDevelopment:         environment == "development",
+		IsProduction:          environment == "production",
+		Port:                  port,
+		DbConnectionString:    dbConnectionString,
+		Applications:          applications,
+		AWSS3LimitBytes:       awsS3LimitBytes,
+		AWSS3BackupBucketName: awsS3BackupBucketName,
+		RedisAddress:          redisAddress,
+		RedisPassword:         redisPassword,
+		AdminPassword:         adminPassword,
+		AccessTokenSecret:     accessTokenSecret,
+		AccessTokenExpSeconds: accessTokenExpSeconds,
 	}, nil
+}
+
+func parseApplicationsConfig() ([]BackupAppConfig, error) {
+	appNames, err := getEnv("APP_NAMES")
+	if err != nil {
+		return nil, err
+	}
+
+	names := strings.Split(appNames, ",")
+	applications := make([]BackupAppConfig, 0, len(names))
+
+	for _, name := range names {
+		name = strings.TrimSpace(name)
+		if name == "" {
+			continue
+		}
+
+		dbConnString, err := getEnv(fmt.Sprintf("APP_%s_DB_CONNECTION_STRING", strings.ToUpper(name)))
+		if err != nil {
+			return nil, err
+		}
+
+		// Public folder is optional
+		publicFolderPath, err := getEnvOptional(fmt.Sprintf("APP_%s_PUBLIC_FOLDER_PATH", strings.ToUpper(name)))
+		if err != nil {
+			return nil, err
+		}
+
+		applications = append(applications, BackupAppConfig{
+			Name:               name,
+			DbConnectionString: dbConnString,
+			PublicFolderPath:   publicFolderPath,
+		})
+	}
+
+	return applications, nil
+}
+
+func getEnvOptional(key string) (string, error) {
+	envVar := os.Getenv(key)
+	return envVar, nil
 }
 
 func getEnvInt(key string) (int64, error) {

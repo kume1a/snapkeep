@@ -18,9 +18,9 @@ import (
 func Run(
 	ctx context.Context,
 	cfg *config.ResourceConfig,
+	appName string,
 	backupDBConnectionString string,
 	backupFolderPath string,
-	backupName string,
 ) error {
 	envVariables, err := config.ParseEnv()
 	if err != nil {
@@ -28,7 +28,7 @@ func Run(
 		return err
 	}
 
-	directoryPath := filepath.Join("./tmp", backupName)
+	directoryPath := filepath.Join("./tmp", appName)
 	dumpDatabaseFolderPath := filepath.Join(directoryPath, "database_dump")
 
 	formattedNow := time.Now().Format("02_01_2006_15:04")
@@ -46,10 +46,23 @@ func Run(
 		return err
 	}
 
-	zippedBackupFolderPath, err := ZipDirectory(backupFolderPath, zippedBackupFolderDestination)
-	if err != nil {
-		logger.Error("Failed to create zip file:", zippedBackupFolderDestination, "Error:", err)
-		return err
+	var zippedBackupFolderPath string
+	var zippedBackupFolderSize shared.FileSizeInUnits
+
+	if backupFolderPath != "" {
+		zippedBackupFolderPath, err = ZipDirectory(backupFolderPath, zippedBackupFolderDestination)
+		if err != nil {
+			logger.Error("Failed to create zip file:", zippedBackupFolderDestination, "Error:", err)
+			return err
+		}
+
+		zippedBackupFolderSize, err = shared.GetFileSize(zippedBackupFolderPath)
+		if err != nil {
+			logger.Error("Failed to get zipped backup folder file size:", err)
+			return err
+		}
+	} else {
+		zippedBackupFolderSize = shared.FileSizeInUnits{InBytes: 0}
 	}
 
 	latestBackup, err := db.GetLatestActiveBackup(cfg.DB)
@@ -77,12 +90,6 @@ func Run(
 	zippedBackupDbFileSize, err := shared.GetFileSize(zippedBackupDatabasePath)
 	if err != nil {
 		logger.Error("Failed to get zipped backup database file size:", err)
-		return err
-	}
-
-	zippedBackupFolderSize, err := shared.GetFileSize(zippedBackupFolderPath)
-	if err != nil {
-		logger.Error("Failed to get zipped backup folder file size:", err)
 		return err
 	}
 
@@ -114,7 +121,7 @@ func Run(
 		Context:     uploadContext,
 		S3Client:    cfg.S3Client,
 		Bucket:      envVariables.AWSS3BackupBucketName,
-		Prefix:      backupName,
+		Prefix:      appName,
 		Key:         filepath.Base(zippedBackupDatabasePath),
 		Body:        zippedBackupDatabaseFile,
 		ContentType: "application/zip",
@@ -125,32 +132,38 @@ func Run(
 		return err
 	}
 
-	zippedBackupFolderFile, err := os.Open(zippedBackupFolderPath)
-	if err != nil {
-		logger.Error("Failed to open zipped backup folder file for upload:", err)
-		return err
-	}
+	var uploadedBackupFolderZipURL string
 
-	uploadedBackupFolderZipURL, err := UploadFileToS3(UploadFileToS3Input{
-		Context:     uploadContext,
-		S3Client:    cfg.S3Client,
-		Bucket:      envVariables.AWSS3BackupBucketName,
-		Prefix:      backupName,
-		Key:         filepath.Base(zippedBackupFolderPath),
-		Body:        zippedBackupFolderFile,
-		ContentType: "application/zip",
-	})
-	zippedBackupFolderFile.Close()
-	if err != nil {
-		logger.Error("Failed to upload zipped backup folder to S3:", err)
-		return err
+	if backupFolderPath != "" && zippedBackupFolderPath != "" {
+		zippedBackupFolderFile, err := os.Open(zippedBackupFolderPath)
+		if err != nil {
+			logger.Error("Failed to open zipped backup folder file for upload:", err)
+			return err
+		}
+
+		uploadedBackupFolderZipURL, err = UploadFileToS3(UploadFileToS3Input{
+			Context:     uploadContext,
+			S3Client:    cfg.S3Client,
+			Bucket:      envVariables.AWSS3BackupBucketName,
+			Prefix:      appName,
+			Key:         filepath.Base(zippedBackupFolderPath),
+			Body:        zippedBackupFolderFile,
+			ContentType: "application/zip",
+		})
+		zippedBackupFolderFile.Close()
+		if err != nil {
+			logger.Error("Failed to upload zipped backup folder to S3:", err)
+			return err
+		}
 	}
 
 	logger.Debug("Uploaded zipped backup database URL:", uploadedBackupDatabaseZipURL)
-	logger.Debug("Uploaded zipped backup folder URL:", uploadedBackupFolderZipURL)
+	if backupFolderPath != "" {
+		logger.Debug("Uploaded zipped backup folder URL:", uploadedBackupFolderZipURL)
+	}
 
 	backupEntity := &db.Backup{
-		BackupName:            backupName,
+		BackupName:            appName,
 		BackupDBSizeBytes:     uint64(zippedBackupDbFileSize.InBytes),
 		BackupDBUrl:           uploadedBackupDatabaseZipURL,
 		BackupFolderSizeBytes: uint64(zippedBackupFolderSize.InBytes),
@@ -161,7 +174,7 @@ func Run(
 		logger.Error("Failed to save backup entity to DB:", err)
 	}
 
-	logger.Info("Backup completed successfully.")
+	logger.Info("Backup completed successfully for app:", appName)
 
 	if err := os.RemoveAll(directoryPath); err != nil {
 		logger.Error("Failed to remove temporary directory:", directoryPath, "Error:", err)

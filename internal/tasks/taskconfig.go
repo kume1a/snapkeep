@@ -43,7 +43,7 @@ func InitializeTaskServer(cfg *config.ResourceConfig) (*asynq.Server, error) {
 	)
 
 	mux := asynq.NewServeMux()
-	mux.HandleFunc(TypeBackupData, CreateBackupDataTaskHandler(cfg))
+	mux.HandleFunc(TypeBackupAllApps, CreateBackupAllAppsTaskHandler(cfg))
 
 	go func() {
 		if err := srv.Run(mux); err != nil {
@@ -90,15 +90,9 @@ func ScheduleBackgroundTasks(
 		return err
 	}
 
-	task, err := NewBackupDataTask(
-		BackupDataPayload{
-			BackupName:               envVars.BackupName,
-			BackupDBConnectionString: envVars.BackupDbConnectionString,
-			BackupFolderPath:         envVars.BackupFolderPath,
-		},
-	)
+	task, err := NewBackupAllAppsTask()
 	if err != nil {
-		logger.Fatal("Failed to create backup data task: ", err)
+		logger.Fatal("Failed to create backup all apps task: ", err)
 		return err
 	}
 
@@ -107,7 +101,20 @@ func ScheduleBackgroundTasks(
 		log.Fatal(err)
 	}
 
-	log.Printf("Registered a scheduled task with entry ID: %s", entryID)
+	log.Printf("Registered sequential backup task for %d applications with entry ID: %s", len(envVars.Applications), entryID)
+
+	for i, app := range envVars.Applications {
+		log.Printf("  App %d: %s (Database: %s, Folder: %s)",
+			i+1,
+			app.Name,
+			"configured",
+			func() string {
+				if app.PublicFolderPath != "" {
+					return "configured"
+				}
+				return "none"
+			}())
+	}
 
 	return nil
 }

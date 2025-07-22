@@ -7,20 +7,18 @@ import (
 )
 
 const (
-	TypeBackupData = "data:backup"
+	TypeBackupAllApps = "data:backup_all_apps"
 )
 
-type BackupDataPayload struct {
-	BackupName               string
-	BackupDBConnectionString string
-	BackupFolderPath         string
+type BackupAllAppsPayload struct {
 }
 
-func NewBackupDataTask(payload BackupDataPayload) (*asynq.Task, error) {
+func NewBackupAllAppsTask() (*asynq.Task, error) {
+	payload := BackupAllAppsPayload{}
 	bytes, err := json.Marshal(payload)
 	if err != nil {
 		return nil, err
 	}
 
-	return asynq.NewTask(TypeBackupData, bytes), nil
+	return asynq.NewTask(TypeBackupAllApps, bytes), nil
 }
