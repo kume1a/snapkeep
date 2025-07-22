@@ -45,9 +45,10 @@ services:
       ENVIRONMENT: ${ENVIRONMENT}
       PORT: ${PORT}
       DB_CONNECTION_STRING: ${DB_CONNECTION_STRING}
-      BACKUP_DB_CONNECTION_STRING: ${BACKUP_DB_CONNECTION_STRING}
-      BACKUP_FOLDER_PATH: /app/backups
-      BACKUP_NAME: ${BACKUP_NAME}
+      APP_NAMES: ${APP_NAMES}
+      APP_SONIFY_DB_CONNECTION_STRING: ${APP_SONIFY_DB_CONNECTION_STRING}
+      APP_SONIFY_PUBLIC_FOLDER_PATH: /app/backups
+      APP_LEXIA_DB_CONNECTION_STRING: ${APP_LEXIA_DB_CONNECTION_STRING}
       AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
       AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
       AWS_REGION: ${AWS_REGION}
@@ -61,7 +62,7 @@ services:
     ports:
       - "8001:8001"
     volumes:
-      - ${BACKUP_FOLDER_PATH}:/app/backups
+      - ${APP_SONIFY_PUBLIC_FOLDER_PATH}:/app/backups
     restart: unless-stopped
     extra_hosts:
       - "host.docker.internal:host-gateway"
