@@ -8,6 +8,11 @@ services:
     container_name: snapkeep_postgres
     ports:
       - "5436:5432"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
     environment:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_USERNAME: ${POSTGRES_USERNAME}
@@ -27,6 +32,11 @@ services:
     container_name: snapkeep_redis
     ports:
       - "6380:6379"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
     environment:
       REDIS_PASSWORD: ${REDIS_PASSWORD}
     volumes:
@@ -48,6 +58,11 @@ services:
         condition: service_healthy
       snapkeepredis:
         condition: service_healthy
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
     env_file:
       - .env
     environment:
