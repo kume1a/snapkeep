@@ -22,7 +22,7 @@ func LoadEnv() {
 
 		logger.Debug("Loading env file: " + envPath)
 
-		godotenv.Load(envPath)
+		godotenv.Overload(envPath)
 	}
 }
 
@@ -45,6 +45,7 @@ type EnvVariables struct {
 	AdminPassword         string
 	AccessTokenSecret     string
 	AccessTokenExpSeconds int64
+	RunBackupOnStart      bool
 }
 
 func ParseEnv() (*EnvVariables, error) {
@@ -103,6 +104,8 @@ func ParseEnv() (*EnvVariables, error) {
 		return nil, err
 	}
 
+	runBackupOnStart := getEnvBool("RUN_BACKUP_ON_START")
+
 	return &EnvVariables{
 		IsDevelopment:         environment == "development",
 		IsProduction:          environment == "production",
@@ -116,6 +119,7 @@ func ParseEnv() (*EnvVariables, error) {
 		AdminPassword:         adminPassword,
 		AccessTokenSecret:     accessTokenSecret,
 		AccessTokenExpSeconds: accessTokenExpSeconds,
+		RunBackupOnStart:      runBackupOnStart,
 	}, nil
 }
 
@@ -172,6 +176,16 @@ func getEnvInt(key string) (int64, error) {
 	}
 
 	return valInt, nil
+}
+
+func getEnvBool(key string) bool {
+	val := os.Getenv(key)
+	if val == "" {
+		return false
+	}
+
+	val = strings.ToLower(strings.TrimSpace(val))
+	return val == "true" || val == "1" || val == "yes"
 }
 
 func getEnv(key string) (string, error) {

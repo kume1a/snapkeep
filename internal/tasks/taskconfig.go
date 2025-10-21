@@ -96,6 +96,16 @@ func ScheduleBackgroundTasks(
 		return err
 	}
 
+	if envVars.RunBackupOnStart {
+		log.Printf("Running backup on start for %d applications", len(envVars.Applications))
+		_, err := client.Enqueue(task)
+		if err != nil {
+			logger.Error("Failed to enqueue backup task on start: ", err)
+		} else {
+			log.Printf("Successfully enqueued backup task on start")
+		}
+	}
+
 	entryID, err := scheduler.Register("0 5 */3 * *", task)
 	if err != nil {
 		log.Fatal(err)

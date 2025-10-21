@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
 	"os"
 	"path/filepath"
 	"snapkeep/internal/config"
@@ -80,6 +81,7 @@ func Run(
 			logger.Error("Failed to delete S3 folder:", err)
 			return err
 		}
+		log.Println("Folder in S3 " + latestBackup.BackupName + " deleted successfully")
 
 		if err := db.MarkBackupAsDeleted(cfg.DB, latestBackup.ID); err != nil {
 			logger.Error("Failed to mark backup as deleted in DB:", err)
