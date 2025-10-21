@@ -66,9 +66,9 @@ func Run(
 		zippedBackupFolderSize = shared.FileSizeInUnits{InBytes: 0}
 	}
 
-	latestBackup, err := db.GetLatestActiveBackup(cfg.DB)
+	latestBackup, err := db.GetLatestActiveBackupByAppName(cfg.DB, appName)
 	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
-		logger.Error("Failed to get latest active backup:", err)
+		logger.Error("Failed to get latest active backup for app:", appName, "error:", err)
 		return err
 	}
 

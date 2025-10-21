@@ -4,11 +4,11 @@ import (
 	"gorm.io/gorm"
 )
 
-func GetLatestActiveBackup(dbConn *gorm.DB) (*Backup, error) {
+func GetLatestActiveBackupByAppName(dbConn *gorm.DB, appName string) (*Backup, error) {
 	var latest Backup
 
 	err := dbConn.Model(&Backup{}).
-		Where("status = ?", BackupStatusActive).
+		Where("status = ? AND backup_name = ?", BackupStatusActive, appName).
 		Order("created_at desc").
 		First(&latest).Error
 
